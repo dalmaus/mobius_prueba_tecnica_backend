@@ -6,6 +6,8 @@ use App\Models\Order;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Garantiza que el usuario autenticado solo pueda ver o cancelar sus
@@ -20,11 +22,13 @@ class CheckOrderOwner
         // El grupo de middleware 'api' ya ha ejecutado SubstituteBindings,
         // así que aquí llega el modelo resuelto y no el id de la URL.
         if (! $order instanceof Order) {
-            abort(Response::HTTP_NOT_FOUND, 'El pedido solicitado no existe.');
+            throw new NotFoundHttpException('El pedido solicitado no existe.');
         }
 
+        // Excepción específica en vez de abort(403): así el renderer de
+        // bootstrap/app.php puede darle un formato uniforme.
         if ($order->user_id !== $request->user()?->id) {
-            abort(Response::HTTP_FORBIDDEN, 'No tienes permiso para acceder a este pedido.');
+            throw new AccessDeniedHttpException('No tienes permiso para acceder a este pedido.');
         }
 
         return $next($request);
