@@ -57,8 +57,7 @@ class OrderController extends Controller
             // Contrapartida del listener DiscountProductStock: si el pedido
             // deja de existir el stock vuelve al catálogo.
             foreach ($order->orderItems as $orderItem) {
-                Product::whereKey($orderItem->product_id)
-                    ->increment('stock', $orderItem->quantity);
+                Product::restoreStock($orderItem->product_id, $orderItem->quantity);
             }
 
             $order->update(['status' => OrderStatus::Cancelled]);

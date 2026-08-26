@@ -16,14 +16,14 @@ class DiscountProductStock
     public function handle(OrderCreated $event): void
     {
         foreach ($event->order->orderItems as $orderItem) {
-            // UPDATE condicional: la comprobación de stock y el descuento
-            // ocurren en la misma sentencia, así que dos pedidos simultáneos
-            // no pueden dejar el stock en negativo.
-            $updated = Product::whereKey($orderItem->product_id)
-                ->where('stock', '>=', $orderItem->quantity)
-                ->decrement('stock', $orderItem->quantity);
+            $hasStock = Product::decrementStock(
+                $orderItem->product_id,
+                $orderItem->quantity,
+            );
 
-            if ($updated === 0) {
+            // false significa que otro pedido se llevó las últimas unidades
+            // entre la validación del Form Request y este momento.
+            if (! $hasStock) {
                 throw new InsufficientStockException(
                     Product::findOrFail($orderItem->product_id),
                     $orderItem->quantity,

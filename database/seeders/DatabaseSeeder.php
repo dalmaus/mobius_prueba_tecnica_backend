@@ -8,11 +8,7 @@ use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
-/**
- * Ojo: este seeder NO usa el trait WithoutModelEvents. Ese trait silencia
- * los eventos de Eloquent, y con él OrderItemObserver no se ejecutaría:
- * los pedidos quedarían con unit_price a null y total a 0.
- */
+
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
@@ -21,7 +17,7 @@ class DatabaseSeeder extends Seeder
 
         // Usuario de pruebas con credenciales conocidas, documentadas en el README.
         $demo = User::factory()->create([
-            'name' => 'Usuario Demo',
+            'name' => 'Usuario Prueba',
             'email' => 'demo@mobius.test',
             'password' => 'password',
         ]);
