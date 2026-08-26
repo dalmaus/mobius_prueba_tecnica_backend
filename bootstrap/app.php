@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckOrderOwner;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,7 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Desde Laravel 11 no existe app/Http/Kernel.php: los alias de
+        // middleware, que antes vivían en $middlewareAliases, se registran aquí.
+        $middleware->alias([
+            'order.owner' => CheckOrderOwner::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

@@ -4,16 +4,69 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderStatus;
 use App\Events\OrderCreated;
+use App\Exceptions\OrderNotCancellableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\Product;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class OrderController extends Controller
 {
+    /**
+     * Lista los pedidos del usuario autenticado.
+     *
+     * No hace falta filtrar por propietario a mano: la consulta parte de la
+     * relación del usuario, así que solo puede devolver pedidos suyos.
+     */
+    public function index(Request $request): AnonymousResourceCollection
+    {
+        $orders = $request->user()->orders()
+            ->with('orderItems.product')
+            ->latest()
+            ->paginate(15);
+
+        return OrderResource::collection($orders);
+    }
+
+    /**
+     * Detalle de un pedido con sus líneas y productos.
+     * La propiedad la verifica el middleware order.owner.
+     */
+    public function show(Order $order): OrderResource
+    {
+        return new OrderResource($order->load('orderItems.product'));
+    }
+
+    /**
+     * Cancela un pedido pendiente y devuelve el stock reservado.
+     * La propiedad la verifica el middleware order.owner.
+     */
+    public function cancel(Order $order): OrderResource
+    {
+        if (! $order->status->isCancellable()) {
+            throw new OrderNotCancellableException($order);
+        }
+
+        DB::transaction(function () use ($order) {
+            // Contrapartida del listener DiscountProductStock: si el pedido
+            // deja de existir el stock vuelve al catálogo.
+            foreach ($order->orderItems as $orderItem) {
+                Product::whereKey($orderItem->product_id)
+                    ->increment('stock', $orderItem->quantity);
+            }
+
+            $order->update(['status' => OrderStatus::Cancelled]);
+        });
+
+        return new OrderResource($order->load('orderItems.product'));
+    }
+
     /**
      * Crea un pedido con sus líneas.
      *
