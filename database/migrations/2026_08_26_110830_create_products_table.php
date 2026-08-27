@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->decimal('price', 10, 2);
-            //Unsigned para evitar valor negativo en BBDD
+            // Unsigned para evitar valor negativo en BBDD
             $table->unsignedInteger('stock')->default(0);
             $table->timestamps();
         });

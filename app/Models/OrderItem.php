@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\OrderItemObserver;
+use Database\Factories\OrderItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[ObservedBy(OrderItemObserver::class)]
 class OrderItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\OrderItemFactory> */
+    /** @use HasFactory<OrderItemFactory> */
     use HasFactory;
 
     protected function casts(): array

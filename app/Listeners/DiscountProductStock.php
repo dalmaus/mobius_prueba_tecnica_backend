@@ -6,7 +6,6 @@ use App\Events\OrderCreated;
 use App\Exceptions\InsufficientStockException;
 use App\Models\Product;
 
-
 class DiscountProductStock
 {
     public function handle(OrderCreated $event): void

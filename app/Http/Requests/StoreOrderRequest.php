@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Validator;
 
 class StoreOrderRequest extends FormRequest
@@ -77,9 +78,9 @@ class StoreOrderRequest extends FormRequest
      * Agrupa las cantidades por producto: un mismo producto puede aparecer
      * en varias líneas y el stock hay que comprobarlo sobre el total.
      *
-     * @return \Illuminate\Support\Collection<int, int>
+     * @return Collection<int, int>
      */
-    public function quantitiesByProduct(): \Illuminate\Support\Collection
+    public function quantitiesByProduct(): Collection
     {
         return collect($this->input('items', []))
             ->groupBy('product_id')

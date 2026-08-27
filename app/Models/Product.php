@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Observers\ProductObserver;
+use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,13 +18,13 @@ use Illuminate\Support\Facades\Cache;
 #[ObservedBy(ProductObserver::class)]
 class Product extends Model
 {
-    /** @use HasFactory<\Database\Factories\ProductFactory> */
+    /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
     /** Clave y duración del catálogo cacheado que sirve ProductController. */
     public const CACHE_KEY = 'products.index';
 
-    public const CACHE_TTL_SECONDS = 60*5; 
+    public const CACHE_TTL_SECONDS = 60 * 5;
 
     /**
      * Descuenta stock de forma atómica.

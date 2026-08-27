@@ -49,21 +49,43 @@ class OrderController extends Controller
      */
     public function cancel(Order $order): OrderResource
     {
+        // Comprobación temprana para responder 422 sin abrir transacción en el
+        // caso normal. La garantía real es el UPDATE condicional de más abajo.
         if (! $order->status->isCancellable()) {
             throw new OrderNotCancellableException($order);
         }
 
-        DB::transaction(function () use ($order) {
+        $cancelled = DB::transaction(function () use ($order) {
+            // La transición pending -> cancelled se hace con un UPDATE ... WHERE
+            // status = 'pending': de dos cancelaciones simultáneas
+            // solo una afecta a una fila, y solo esa devuelve el stock. Si
+            // comprobásemos el estado en PHP, ambas pasarían el if y el stock se
+            // restauraría dos veces.
+            $affected = Order::query()
+                ->whereKey($order->getKey())
+                ->pending()
+                ->update(['status' => OrderStatus::Cancelled]);
+
+            if ($affected === 0) {
+                return false;
+            }
+
             // Contrapartida del listener DiscountProductStock: si el pedido
             // deja de existir el stock vuelve al catálogo.
             foreach ($order->orderItems as $orderItem) {
                 Product::restoreStock($orderItem->product_id, $orderItem->quantity);
             }
 
-            $order->update(['status' => OrderStatus::Cancelled]);
+            return true;
         });
 
-        return new OrderResource($order->load('orderItems.product'));
+        // Perdimos la carrera: otra petición cambió el estado entre el if y el
+        // UPDATE. El pedido ya no es cancelable, así que la respuesta es la misma.
+        if (! $cancelled) {
+            throw new OrderNotCancellableException($order->refresh());
+        }
+
+        return new OrderResource($order->refresh()->load('orderItems.product'));
     }
 
     /**

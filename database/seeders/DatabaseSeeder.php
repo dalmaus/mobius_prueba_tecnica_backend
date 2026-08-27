@@ -7,7 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-
+use Illuminate\Support\Collection;
 
 class DatabaseSeeder extends Seeder
 {
@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Product>  $products
+     * @param  Collection<int, Product>  $products
      */
     private function createOrder(User $user, $products, string $status): void
     {
