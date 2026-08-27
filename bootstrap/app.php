@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'order.owner' => CheckOrderOwner::class,
         ]);
+
+        // Evita redirecciones a una ruta "fantasma" en peticiones no autenticadas
+        $middleware->redirectGuestsTo(null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
