@@ -1,58 +1,143 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# API de Gestión de Pedidos
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API REST para gestionar usuarios, productos, pedidos y líneas de pedido.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Laravel 13
+- PHP 8.3+
+- Laravel Sanctum
+- SQLite
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requisitos
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.3 o superior con `pdo_sqlite`
+- Composer 2
 
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Instalación
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+En Windows PowerShell, sustituye el segundo comando por:
 
-## Contributing
+```powershell
+Copy-Item .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+El proyecto usa SQLite y no necesita Docker ni servicios externos.
 
-## Code of Conduct
+## Ejecución
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+php artisan serve
+```
 
-## Security Vulnerabilities
+La API estará disponible en `http://localhost:8000/api`.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Datos de prueba
 
-## License
+El seeder crea usuarios y productos de ejemplo:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+| Email | Contraseña | Uso |
+|---|---|---|
+| `demo@mobius.test` | `password` | Usuario principal |
+| `sd@mobius.test` | `password` | Comprobar acceso no autorizado |
+
+## Autenticación
+
+Los endpoints protegidos requieren:
+
+```http
+Authorization: Bearer <token>
+```
+
+El token se obtiene mediante `/api/register` o `/api/login`.
+
+## Endpoints
+
+| Método | Endpoint | Auth | Descripción |
+|---|---|:---:|---|
+| `POST` | `/api/register` | No | Registrar usuario y obtener token |
+| `POST` | `/api/login` | No | Iniciar sesión y obtener token |
+| `POST` | `/api/logout` | Sí | Revocar el token actual |
+| `GET` | `/api/products` | No | Listar productos |
+| `POST` | `/api/orders` | Sí | Crear un pedido |
+| `GET` | `/api/orders` | Sí | Listar pedidos del usuario autenticado |
+| `GET` | `/api/orders/{id}` | Sí | Ver un pedido con sus líneas y productos |
+| `PUT` | `/api/orders/{id}/cancel` | Sí | Cancelar un pedido pendiente |
+
+Las rutas de detalle y cancelación comprueban que el pedido pertenece al usuario autenticado.
+
+## Ejemplos de peticiones
+
+### Registrar usuario
+
+```json
+{
+  "name": "Sergio",
+  "email": "sergio@example.com",
+  "password": "Password123!",
+  "password_confirmation": "Password123!"
+}
+```
+
+### Iniciar sesión
+
+```json
+{
+  "email": "demo@mobius.test",
+  "password": "password"
+}
+```
+
+### Crear pedido
+
+```json
+{
+  "items": [
+    {
+      "product_id": 1,
+      "quantity": 2
+    }
+  ]
+}
+```
+
+`unit_price`, `subtotal` y `total` se calculan en el servidor a partir del precio actual del producto.
+
+## Reglas principales
+
+- El stock no puede ser insuficiente para crear un pedido.
+- El stock se descuenta al crear el pedido y se restaura al cancelarlo.
+- Solo se pueden cancelar pedidos `pending`.
+- Los pedidos de otros usuarios devuelven `403`.
+- Los errores de validación y negocio devuelven `422`.
+- Las respuestas no exponen contraseñas ni otros datos sensibles.
+
+## Tests
+
+```bash
+php artisan test
+```
+
+## Postman
+
+Importa la colección [Mobius-Orders.postman_collection.json](postman/Mobius-Orders.postman_collection.json).
+
+Ejecuta las peticiones en este orden:
+
+1. Register
+2. Login
+3. List products
+4. Create order
+5. List my orders
+6. Get order detail
+7. Cancel order
+8. Logout
+
+La colección guarda automáticamente el token, el producto y el pedido creados durante la prueba.
